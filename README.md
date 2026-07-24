@@ -1,5 +1,7 @@
 # agents-compose
 
+English | [日本語](./README.ja.md)
+
 Compose ordinary Markdown documents into a deterministic `AGENTS.md`.
 
 `agents-compose` lets existing operational notes, architecture documents, and team conventions remain the source of truth. It does not introduce a new rule DSL and does not rewrite your documentation.

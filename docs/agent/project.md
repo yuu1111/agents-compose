@@ -1,34 +1,34 @@
-# Project instructions
+# プロジェクト指示
 
-## Purpose
+## 目的
 
-`agents-compose` composes ordinary Markdown documents into a deterministic `AGENTS.md`.
-Keep the core small, deterministic, and independent from any AI provider.
+`agents-compose` は通常の Markdown ドキュメントを、決定的な `AGENTS.md` に合成する。
+コアは小さく決定的に保ち、特定の AI プロバイダーに依存させないこと。
 
-## Development
+## 開発
 
-- Use Bun for dependency management and tests.
-- Support Node.js 22 and later at runtime.
-- Run `bun run format` after edits.
-- Run `bun run check` before committing.
-- Keep runtime dependencies limited to behavior that is not useful to implement locally.
-- Add or update golden fixtures when rendering behavior changes.
+- 依存関係の管理とテストには Bun を使用すること。
+- ランタイムは Node.js 22 以降をサポートすること。
+- 編集後は `bun run format` を実行すること。
+- コミット前に `bun run check` を実行すること。
+- ランタイム依存関係は、ローカルで実装する利点がない機能に限定すること。
+- レンダリング動作を変更した場合は、golden fixture を追加または更新すること。
 
-## Compatibility
+## 互換性
 
-- Treat configuration and generated output changes as public API changes.
-- Preserve byte-identical output across Windows, Linux, and macOS.
-- Never follow symbolic links while discovering sources.
-- Do not rewrite an output file when its bytes are already current.
+- 設定や生成出力の変更は、公開 API の変更として扱うこと。
+- Windows、Linux、macOS の間でバイト単位に同一の出力を維持すること。
+- ソース探索時にシンボリックリンクをたどらないこと。
+- 出力ファイルのバイト列がすでに最新の場合は書き換えないこと。
 
-## Documentation
+## ドキュメント
 
-- Keep the README examples executable.
-- Keep `schema.json`, runtime validation, tests, and the configuration reference synchronized.
-- Generate this file with `bun run compose`; do not edit `AGENTS.md` directly.
+- README の例は実行可能な状態に保つこと。
+- `schema.json`、ランタイム検証、テスト、設定リファレンスを同期させること。
+- このファイルは `bun run compose` で生成し、`AGENTS.md` を直接編集しないこと。
 
-## Release
+## リリース
 
-- Publish from a GitHub Release through the release workflow.
-- Use npm provenance.
-- Do not publish when CI or package dry-run verification fails.
+- GitHub Release を起点に、release workflow を通して公開すること。
+- npm provenance を使用すること。
+- CI またはパッケージの dry-run 検証が失敗した場合は公開しないこと。
