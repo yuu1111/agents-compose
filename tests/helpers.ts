@@ -4,10 +4,15 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+export const projectRoot = resolve(
+	dirname(fileURLToPath(import.meta.url)),
+	"..",
+);
 export const fixtureRoot = join(projectRoot, "tests", "fixtures", "workspace");
 
-export async function withTempDirectory<T>(run: (directory: string) => Promise<T>): Promise<T> {
+export async function withTempDirectory<T>(
+	run: (directory: string) => Promise<T>,
+): Promise<T> {
 	const directory = await mkdtemp(join(tmpdir(), "agents-compose-test-"));
 	try {
 		return await run(directory);
@@ -27,7 +32,10 @@ export interface CommandResult {
 	stderr: string;
 }
 
-export async function runCli(args: string[], cwd: string): Promise<CommandResult> {
+export async function runCli(
+	args: string[],
+	cwd: string,
+): Promise<CommandResult> {
 	const cliPath = join(projectRoot, "src", "cli.ts");
 	return await new Promise((resolveResult, reject) => {
 		const child = spawn(process.execPath, [cliPath, ...args], {

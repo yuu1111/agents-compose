@@ -15,19 +15,27 @@ describe("normalizeNewlines", () => {
 
 describe("stripLeadingFrontmatter", () => {
 	test("removes only a complete leading block", () => {
-		expect(stripLeadingFrontmatter("---\ntitle: Test\n---\n# Body")).toBe("# Body");
+		expect(stripLeadingFrontmatter("---\ntitle: Test\n---\n# Body")).toBe(
+			"# Body",
+		);
 	});
 
 	test("keeps a block without a closing delimiter", () => {
-		expect(stripLeadingFrontmatter("---\ntitle: Test\n# Body")).toBe("---\ntitle: Test\n# Body");
+		expect(stripLeadingFrontmatter("---\ntitle: Test\n# Body")).toBe(
+			"---\ntitle: Test\n# Body",
+		);
 	});
 
 	test("does not mistake a prefixed delimiter for the closing line", () => {
-		expect(stripLeadingFrontmatter("---\n---not-a-delimiter\n---\nBody")).toBe("Body");
+		expect(stripLeadingFrontmatter("---\n---not-a-delimiter\n---\nBody")).toBe(
+			"Body",
+		);
 	});
 
 	test("keeps horizontal rules in the body", () => {
-		expect(stripLeadingFrontmatter("# Body\n\n---\n\nText")).toBe("# Body\n\n---\n\nText");
+		expect(stripLeadingFrontmatter("# Body\n\n---\n\nText")).toBe(
+			"# Body\n\n---\n\nText",
+		);
 	});
 });
 
@@ -39,10 +47,14 @@ describe("trimEdgeBlankLines", () => {
 
 describe("transformSource", () => {
 	test("normalizes before stripping frontmatter", () => {
-		expect(transformSource("---\r\ncreated: now\r\n---\r\n\r\n本文\r\n", true)).toBe("本文");
+		expect(
+			transformSource("---\r\ncreated: now\r\n---\r\n\r\n本文\r\n", true),
+		).toBe("本文");
 	});
 
 	test("can preserve frontmatter", () => {
-		expect(transformSource("---\na: b\n---\nBody", false)).toBe("---\na: b\n---\nBody");
+		expect(transformSource("---\na: b\n---\nBody", false)).toBe(
+			"---\na: b\n---\nBody",
+		);
 	});
 });

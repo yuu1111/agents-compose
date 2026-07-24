@@ -15,7 +15,10 @@ export async function compose(config: ResolvedConfig): Promise<ComposeResult> {
 		sourceFiles.map(async (source) => ({
 			relativePath: source.relativePath,
 			content: transformSource(
-				await readUtf8(source.absolutePath, `source file ${source.relativePath}`),
+				await readUtf8(
+					source.absolutePath,
+					`source file ${source.relativePath}`,
+				),
 				config.stripFrontmatter,
 			),
 		})),

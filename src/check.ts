@@ -14,7 +14,9 @@ async function readExisting(path: string): Promise<Buffer | undefined> {
 	try {
 		const stats = await lstat(path);
 		if (stats.isSymbolicLink()) {
-			throw new AgentsComposeError(`Output must not be a symbolic link: ${path}`);
+			throw new AgentsComposeError(
+				`Output must not be a symbolic link: ${path}`,
+			);
 		}
 		if (!stats.isFile()) {
 			throw new AgentsComposeError(`Output is not a regular file: ${path}`);

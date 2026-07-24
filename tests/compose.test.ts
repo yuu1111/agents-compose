@@ -9,10 +9,16 @@ describe("compose", () => {
 	test("matches the workspace golden fixture", async () => {
 		const config = await loadConfig(join(fixtureRoot, "agents-compose.json"));
 		const result = await compose(config);
-		const expected = await readFile(join(fixtureRoot, "expected", "AGENTS.md"), "utf8");
+		const expected = await readFile(
+			join(fixtureRoot, "expected", "AGENTS.md"),
+			"utf8",
+		);
 
 		expect(result.content).toBe(expected);
-		expect(result.sources).toEqual(["docs/agent/workspace.md", "docs/agent/terminal.md"]);
+		expect(result.sources).toEqual([
+			"docs/agent/workspace.md",
+			"docs/agent/terminal.md",
+		]);
 	});
 
 	test("keeps a source comment for an empty source", async () => {
@@ -20,10 +26,16 @@ describe("compose", () => {
 			await writeText(join(directory, "empty.md"), "---\na: b\n---\n");
 			await writeText(
 				join(directory, "agents-compose.json"),
-				JSON.stringify({ version: 1, sources: ["empty.md"], generatedHeader: false }),
+				JSON.stringify({
+					version: 1,
+					sources: ["empty.md"],
+					generatedHeader: false,
+				}),
 			);
 
-			const result = await compose(await loadConfig(join(directory, "agents-compose.json")));
+			const result = await compose(
+				await loadConfig(join(directory, "agents-compose.json")),
+			);
 
 			expect(result.content).toBe("<!-- source: empty.md -->\n");
 		});
@@ -48,14 +60,19 @@ describe("compose", () => {
 		await withTempDirectory(async (directory) => {
 			await writeFile(
 				join(directory, "bom.md"),
-				Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from("# BOM\n", "utf8")]),
+				Buffer.concat([
+					Buffer.from([0xef, 0xbb, 0xbf]),
+					Buffer.from("# BOM\n", "utf8"),
+				]),
 			);
 			await writeText(
 				join(directory, "agents-compose.json"),
 				JSON.stringify({ version: 1, sources: ["bom.md"] }),
 			);
 
-			const result = await compose(await loadConfig(join(directory, "agents-compose.json")));
+			const result = await compose(
+				await loadConfig(join(directory, "agents-compose.json")),
+			);
 
 			expect(result.content).toContain("<!-- source: bom.md -->\n# BOM");
 			expect(result.content).not.toContain("\u{feff}");
@@ -84,7 +101,9 @@ describe("compose", () => {
 				JSON.stringify({ version: 1, sources: ["docs/*.md"] }),
 			);
 
-			const result = await compose(await loadConfig(join(directory, "agents-compose.json")));
+			const result = await compose(
+				await loadConfig(join(directory, "agents-compose.json")),
+			);
 
 			expect(result.sources).toEqual(["docs/\u{e000}.md", "docs/😀.md"]);
 		});
@@ -129,7 +148,9 @@ describe("compose", () => {
 					JSON.stringify({ version: 1, sources: ["*.md"] }),
 				);
 
-				const result = await compose(await loadConfig(join(directory, "agents-compose.json")));
+				const result = await compose(
+					await loadConfig(join(directory, "agents-compose.json")),
+				);
 
 				expect(result.sources).toEqual(["real.md"]);
 			});

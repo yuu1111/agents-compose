@@ -16,7 +16,9 @@ describe("checkOutput", () => {
 			await writeText(join(directory, "AGENTS.md"), "old\n");
 			const config = await loadConfig(join(directory, "agents-compose.json"));
 
-			expect(await checkOutput(config, "old\n", false)).toEqual({ matches: true });
+			expect(await checkOutput(config, "old\n", false)).toEqual({
+				matches: true,
+			});
 
 			const result = await checkOutput(config, "new\n", true);
 			expect(result.matches).toBe(false);

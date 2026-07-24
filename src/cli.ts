@@ -124,7 +124,8 @@ run(process.argv.slice(2))
 		process.exitCode = exitCode;
 	})
 	.catch((error: unknown) => {
-		const prefix = error instanceof AgentsComposeError ? "Error" : "Unexpected error";
+		const prefix =
+			error instanceof AgentsComposeError ? "Error" : "Unexpected error";
 		process.stderr.write(`${prefix}: ${toErrorMessage(error)}\n`);
 		process.exitCode = 2;
 	});

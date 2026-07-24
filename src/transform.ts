@@ -8,7 +8,9 @@ export function stripLeadingFrontmatter(value: string): string {
 	}
 
 	const lines = value.split("\n");
-	const closingLine = lines.findIndex((line, index) => index > 0 && line === "---");
+	const closingLine = lines.findIndex(
+		(line, index) => index > 0 && line === "---",
+	);
 	if (closingLine === -1) {
 		return value;
 	}
@@ -31,8 +33,13 @@ export function trimEdgeBlankLines(value: string): string {
 	return lines.slice(start, end).join("\n");
 }
 
-export function transformSource(value: string, stripFrontmatter: boolean): string {
+export function transformSource(
+	value: string,
+	stripFrontmatter: boolean,
+): string {
 	const normalized = normalizeNewlines(value);
-	const transformed = stripFrontmatter ? stripLeadingFrontmatter(normalized) : normalized;
+	const transformed = stripFrontmatter
+		? stripLeadingFrontmatter(normalized)
+		: normalized;
 	return trimEdgeBlankLines(transformed);
 }

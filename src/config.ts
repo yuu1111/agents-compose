@@ -40,12 +40,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function normalizeRelativePath(value: string, field: string): string {
 	if (value.trim().length === 0 || /[\r\n\0]/u.test(value)) {
-		throw new AgentsComposeError(`${field} must be a non-empty single-line path.`);
+		throw new AgentsComposeError(
+			`${field} must be a non-empty single-line path.`,
+		);
 	}
 
 	const normalized = value.replaceAll("\\", "/").replace(/^\.\//u, "");
 	if (normalized.startsWith("!")) {
-		throw new AgentsComposeError(`${field} must not use a negative glob pattern: ${value}`);
+		throw new AgentsComposeError(
+			`${field} must not use a negative glob pattern: ${value}`,
+		);
 	}
 	if (
 		isAbsolute(normalized) ||
@@ -53,7 +57,9 @@ function normalizeRelativePath(value: string, field: string): string {
 		normalized.startsWith("/") ||
 		normalized.split("/").includes("..")
 	) {
-		throw new AgentsComposeError(`${field} must stay within the project root: ${value}`);
+		throw new AgentsComposeError(
+			`${field} must stay within the project root: ${value}`,
+		);
 	}
 
 	if (normalized === "" || normalized === ".") {
@@ -71,12 +77,16 @@ function readStringArray(
 	const value = raw[key];
 	if (value === undefined) {
 		if (required) {
-			throw new AgentsComposeError(`Missing required configuration key: ${key}`);
+			throw new AgentsComposeError(
+				`Missing required configuration key: ${key}`,
+			);
 		}
 		return [];
 	}
 	if (!Array.isArray(value) || (required && value.length === 0)) {
-		throw new AgentsComposeError(`${key} must be ${required ? "a non-empty" : "an"} array.`);
+		throw new AgentsComposeError(
+			`${key} must be ${required ? "a non-empty" : "an"} array.`,
+		);
 	}
 	return value.map((item, index) => {
 		if (typeof item !== "string") {
@@ -142,20 +152,27 @@ export function parseConfig(rawValue: unknown): ComposeOptions {
 export async function loadConfig(configPath: string): Promise<ResolvedConfig> {
 	const absoluteConfigPath = resolve(configPath);
 	const projectRoot = dirname(absoluteConfigPath);
-	const text = await readUtf8(absoluteConfigPath, `configuration file ${absoluteConfigPath}`);
+	const text = await readUtf8(
+		absoluteConfigPath,
+		`configuration file ${absoluteConfigPath}`,
+	);
 
 	let raw: unknown;
 	try {
 		raw = JSON.parse(text);
 	} catch (error) {
-		throw new AgentsComposeError(`Invalid JSON in ${absoluteConfigPath}.`, { cause: error });
+		throw new AgentsComposeError(`Invalid JSON in ${absoluteConfigPath}.`, {
+			cause: error,
+		});
 	}
 
 	const config = parseConfig(raw);
 	const outputPath = resolve(projectRoot, config.output);
 	const relativeOutput = relative(projectRoot, outputPath);
 	if (relativeOutput.startsWith("..") || isAbsolute(relativeOutput)) {
-		throw new AgentsComposeError(`output must stay within the project root: ${config.output}`);
+		throw new AgentsComposeError(
+			`output must stay within the project root: ${config.output}`,
+		);
 	}
 
 	return {

@@ -36,16 +36,23 @@ function compareCodePoints(left: string, right: string): number {
 	return leftCharacters.length - rightCharacters.length;
 }
 
-async function expandSource(pattern: string, config: ResolvedConfig): Promise<string[]> {
+async function expandSource(
+	pattern: string,
+	config: ResolvedConfig,
+): Promise<string[]> {
 	if (isDynamicPattern(pattern, { caseSensitiveMatch: true })) {
 		const matches = await glob(pattern, {
 			...globOptions,
 			cwd: config.projectRoot,
 		});
 		if (matches.length === 0) {
-			throw new AgentsComposeError(`Source pattern matched no files: ${pattern}`);
+			throw new AgentsComposeError(
+				`Source pattern matched no files: ${pattern}`,
+			);
 		}
-		return matches.map((match) => match.replaceAll("\\", "/")).sort(compareCodePoints);
+		return matches
+			.map((match) => match.replaceAll("\\", "/"))
+			.sort(compareCodePoints);
 	}
 
 	const absolutePath = resolve(config.projectRoot, pattern);
@@ -53,10 +60,14 @@ async function expandSource(pattern: string, config: ResolvedConfig): Promise<st
 	try {
 		stats = await lstat(absolutePath);
 	} catch (error) {
-		throw new AgentsComposeError(`Source file does not exist: ${pattern}`, { cause: error });
+		throw new AgentsComposeError(`Source file does not exist: ${pattern}`, {
+			cause: error,
+		});
 	}
 	if (stats.isSymbolicLink()) {
-		throw new AgentsComposeError(`Literal source must not be a symbolic link: ${pattern}`);
+		throw new AgentsComposeError(
+			`Literal source must not be a symbolic link: ${pattern}`,
+		);
 	}
 	if (!stats.isFile()) {
 		throw new AgentsComposeError(`Source is not a regular file: ${pattern}`);
@@ -75,7 +86,9 @@ async function expandExcludes(config: ResolvedConfig): Promise<Set<string>> {
 	return new Set(matches.map((match) => match.replaceAll("\\", "/")));
 }
 
-export async function discoverSources(config: ResolvedConfig): Promise<SourceFile[]> {
+export async function discoverSources(
+	config: ResolvedConfig,
+): Promise<SourceFile[]> {
 	const candidates: string[] = [];
 	for (const pattern of config.sources) {
 		candidates.push(...(await expandSource(pattern, config)));
@@ -86,7 +99,11 @@ export async function discoverSources(config: ResolvedConfig): Promise<SourceFil
 	const sources: SourceFile[] = [];
 
 	for (const relativePath of candidates) {
-		if (relativePath === config.output || excluded.has(relativePath) || seen.has(relativePath)) {
+		if (
+			relativePath === config.output ||
+			excluded.has(relativePath) ||
+			seen.has(relativePath)
+		) {
 			continue;
 		}
 		seen.add(relativePath);

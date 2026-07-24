@@ -8,7 +8,9 @@ export function decodeUtf8(bytes: Uint8Array, label: string): string {
 	try {
 		return decoder.decode(bytes).replace(/^\uFEFF/, "");
 	} catch (error) {
-		throw new AgentsComposeError(`${label} is not valid UTF-8.`, { cause: error });
+		throw new AgentsComposeError(`${label} is not valid UTF-8.`, {
+			cause: error,
+		});
 	}
 }
 
