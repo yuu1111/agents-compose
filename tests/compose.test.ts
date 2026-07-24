@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { compose } from "@/compose";
 import { loadConfig } from "@/config";
@@ -44,6 +44,24 @@ describe("compose", () => {
 		});
 	});
 
+	test("accepts and removes a leading UTF-8 BOM", async () => {
+		await withTempDirectory(async (directory) => {
+			await writeFile(
+				join(directory, "bom.md"),
+				Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from("# BOM\n", "utf8")]),
+			);
+			await writeText(
+				join(directory, "agents-compose.json"),
+				JSON.stringify({ version: 1, sources: ["bom.md"] }),
+			);
+
+			const result = await compose(await loadConfig(join(directory, "agents-compose.json")));
+
+			expect(result.content).toContain("<!-- source: bom.md -->\n# BOM");
+			expect(result.content).not.toContain("\u{feff}");
+		});
+	});
+
 	test("errors when a glob matches no files", async () => {
 		await withTempDirectory(async (directory) => {
 			await writeText(
@@ -85,4 +103,36 @@ describe("compose", () => {
 			).rejects.toThrow("No source files remain");
 		});
 	});
+
+	if (process.platform !== "win32") {
+		test("rejects a literal symbolic-link source", async () => {
+			await withTempDirectory(async (directory) => {
+				await writeText(join(directory, "real.md"), "# Real\n");
+				await symlink("real.md", join(directory, "link.md"));
+				await writeText(
+					join(directory, "agents-compose.json"),
+					JSON.stringify({ version: 1, sources: ["link.md"] }),
+				);
+
+				await expect(
+					compose(await loadConfig(join(directory, "agents-compose.json"))),
+				).rejects.toThrow("must not be a symbolic link");
+			});
+		});
+
+		test("does not include symbolic links matched by a glob", async () => {
+			await withTempDirectory(async (directory) => {
+				await writeText(join(directory, "real.md"), "# Real\n");
+				await symlink("real.md", join(directory, "link.md"));
+				await writeText(
+					join(directory, "agents-compose.json"),
+					JSON.stringify({ version: 1, sources: ["*.md"] }),
+				);
+
+				const result = await compose(await loadConfig(join(directory, "agents-compose.json")));
+
+				expect(result.sources).toEqual(["real.md"]);
+			});
+		});
+	}
 });

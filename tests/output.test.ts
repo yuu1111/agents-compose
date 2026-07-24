@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { chmod, mkdir, readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 
 import { writeOutput } from "@/output";
@@ -25,4 +25,25 @@ describe("writeOutput", () => {
 			).toEqual([]);
 		});
 	});
+
+	if (process.platform !== "win32") {
+		test("preserves the existing output when the atomic write fails", async () => {
+			await withTempDirectory(async (directory) => {
+				const outputDirectory = join(directory, "readonly");
+				const outputPath = join(outputDirectory, "AGENTS.md");
+				await mkdir(outputDirectory);
+				await writeOutput(outputPath, "existing\n");
+				await chmod(outputDirectory, 0o555);
+
+				try {
+					await expect(writeOutput(outputPath, "replacement\n")).rejects.toThrow(
+						"Unable to write output file",
+					);
+					expect(await readFile(outputPath, "utf8")).toBe("existing\n");
+				} finally {
+					await chmod(outputDirectory, 0o755);
+				}
+			});
+		});
+	}
 });
