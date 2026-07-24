@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { compose } from "@/compose";
 import { loadConfig } from "@/config";
-import { fixtureRoot, withTempDirectory, writeText } from "./helpers";
+import { compose } from "@/core/compose";
+import { fixtureRoot, withTempDirectory, writeText } from "../helpers";
 
 describe("compose", () => {
 	test("matches the workspace golden fixture", async () => {

@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { glob, isDynamicPattern } from "tinyglobby";
 
 import type { ResolvedConfig } from "@/config";
-import { AgentsComposeError } from "@/errors";
+import { AgentsComposeError } from "@/shared/errors";
 
 export interface SourceFile {
 	absolutePath: string;
@@ -19,6 +19,10 @@ const globOptions = {
 	followSymbolicLinks: false,
 	onlyFiles: true,
 } as const;
+
+function toPortablePath(path: string): string {
+	return path.replaceAll("\\", "/");
+}
 
 function compareCodePoints(left: string, right: string): number {
 	const leftCharacters = Array.from(left);
@@ -36,6 +40,10 @@ function compareCodePoints(left: string, right: string): number {
 	return leftCharacters.length - rightCharacters.length;
 }
 
+function normalizeGlobMatches(matches: string[]): string[] {
+	return matches.map(toPortablePath).sort(compareCodePoints);
+}
+
 async function expandSource(
 	pattern: string,
 	config: ResolvedConfig,
@@ -50,9 +58,7 @@ async function expandSource(
 				`Source pattern matched no files: ${pattern}`,
 			);
 		}
-		return matches
-			.map((match) => match.replaceAll("\\", "/"))
-			.sort(compareCodePoints);
+		return normalizeGlobMatches(matches);
 	}
 
 	const absolutePath = resolve(config.projectRoot, pattern);
@@ -83,7 +89,7 @@ async function expandExcludes(config: ResolvedConfig): Promise<Set<string>> {
 		...globOptions,
 		cwd: config.projectRoot,
 	});
-	return new Set(matches.map((match) => match.replaceAll("\\", "/")));
+	return new Set(matches.map(toPortablePath));
 }
 
 export async function discoverSources(

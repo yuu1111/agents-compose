@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 
 import { loadConfig, parseConfig } from "@/config";
-import { AgentsComposeError } from "@/errors";
-import { withTempDirectory, writeText } from "./helpers";
+import { AgentsComposeError } from "@/shared/errors";
+import { withTempDirectory, writeText } from "../helpers";
 
 describe("parseConfig", () => {
 	test("applies documented defaults", () => {

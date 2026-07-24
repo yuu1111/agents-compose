@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import { chmod, mkdir, readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 
-import { writeOutput } from "@/output";
-import { withTempDirectory } from "./helpers";
+import { writeOutput } from "@/io/output";
+import { withTempDirectory } from "../helpers";
 
 describe("writeOutput", () => {
 	test("writes atomically and skips byte-identical content", async () => {

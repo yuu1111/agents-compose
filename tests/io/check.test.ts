@@ -1,9 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-
-import { checkOutput } from "@/check";
 import { loadConfig } from "@/config";
-import { withTempDirectory, writeText } from "./helpers";
+import { checkOutput } from "@/io/check";
+import { withTempDirectory, writeText } from "../helpers";
 
 describe("checkOutput", () => {
 	test("compares bytes and creates a labeled unified diff", async () => {

@@ -2,12 +2,12 @@ import { dirname, isAbsolute, relative, resolve, win32 } from "node:path";
 
 import { isDynamicPattern } from "tinyglobby";
 
-import { AgentsComposeError } from "@/errors";
-import { readUtf8 } from "@/utf8";
+import { readUtf8 } from "@/io/utf8";
+import { AgentsComposeError } from "@/shared/errors";
 
 export const DEFAULT_CONFIG_NAME = "agents-compose.json";
 
-const knownKeys = new Set([
+const CONFIG_KEYS = [
 	"$schema",
 	"version",
 	"output",
@@ -16,7 +16,11 @@ const knownKeys = new Set([
 	"stripFrontmatter",
 	"sourceComments",
 	"generatedHeader",
-]);
+] as const;
+const knownKeys: ReadonlySet<string> = new Set(CONFIG_KEYS);
+
+type StringArrayKey = "sources" | "exclude";
+type BooleanKey = "stripFrontmatter" | "sourceComments" | "generatedHeader";
 
 export interface ComposeOptions {
 	version: 1;
@@ -71,7 +75,7 @@ function normalizeRelativePath(value: string, field: string): string {
 
 function readStringArray(
 	raw: Record<string, unknown>,
-	key: "sources" | "exclude",
+	key: StringArrayKey,
 	required: boolean,
 ): string[] {
 	const value = raw[key];
@@ -98,7 +102,7 @@ function readStringArray(
 
 function readBoolean(
 	raw: Record<string, unknown>,
-	key: "stripFrontmatter" | "sourceComments" | "generatedHeader",
+	key: BooleanKey,
 	defaultValue: boolean,
 ): boolean {
 	const value = raw[key];
@@ -111,16 +115,33 @@ function readBoolean(
 	return value;
 }
 
+function assertKnownKeys(raw: Record<string, unknown>): void {
+	for (const key of Object.keys(raw)) {
+		if (!knownKeys.has(key)) {
+			throw new AgentsComposeError(`Unknown configuration key: ${key}`);
+		}
+	}
+}
+
+function readOutput(raw: Record<string, unknown>): string {
+	const value = raw.output ?? "AGENTS.md";
+	if (typeof value !== "string") {
+		throw new AgentsComposeError("output must be a string.");
+	}
+
+	const output = normalizeRelativePath(value, "output");
+	if (isDynamicPattern(output, { caseSensitiveMatch: true })) {
+		throw new AgentsComposeError("output must not contain a glob pattern.");
+	}
+	return output;
+}
+
 export function parseConfig(rawValue: unknown): ComposeOptions {
 	if (!isRecord(rawValue)) {
 		throw new AgentsComposeError("Configuration must be a JSON object.");
 	}
 
-	for (const key of Object.keys(rawValue)) {
-		if (!knownKeys.has(key)) {
-			throw new AgentsComposeError(`Unknown configuration key: ${key}`);
-		}
-	}
+	assertKnownKeys(rawValue);
 
 	if (rawValue.version !== 1) {
 		throw new AgentsComposeError("version must be 1.");
@@ -129,18 +150,9 @@ export function parseConfig(rawValue: unknown): ComposeOptions {
 		throw new AgentsComposeError("$schema must be a string.");
 	}
 
-	const outputValue = rawValue.output ?? "AGENTS.md";
-	if (typeof outputValue !== "string") {
-		throw new AgentsComposeError("output must be a string.");
-	}
-	const output = normalizeRelativePath(outputValue, "output");
-	if (isDynamicPattern(output, { caseSensitiveMatch: true })) {
-		throw new AgentsComposeError("output must not contain a glob pattern.");
-	}
-
 	return {
 		version: 1,
-		output,
+		output: readOutput(rawValue),
 		sources: readStringArray(rawValue, "sources", true),
 		exclude: readStringArray(rawValue, "exclude", false),
 		stripFrontmatter: readBoolean(rawValue, "stripFrontmatter", true),

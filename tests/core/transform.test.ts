@@ -5,7 +5,7 @@ import {
 	stripLeadingFrontmatter,
 	transformSource,
 	trimEdgeBlankLines,
-} from "@/transform";
+} from "@/core/transform";
 
 describe("normalizeNewlines", () => {
 	test("normalizes CRLF and CR to LF", () => {

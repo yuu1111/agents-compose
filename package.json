@@ -21,7 +21,8 @@
 		"LICENSE"
 	],
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
+		"clean": "node --input-type=module --eval \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\"",
+		"build": "bun run clean && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
 		"test": "bun test",
 		"typecheck": "tsc --noEmit",
 		"lint": "biome check .",

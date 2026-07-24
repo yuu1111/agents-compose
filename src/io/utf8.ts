@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-import { AgentsComposeError } from "@/errors";
+import { AgentsComposeError } from "@/shared/errors";
 
 const decoder = new TextDecoder("utf-8", { fatal: true });
 

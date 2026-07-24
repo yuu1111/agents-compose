@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { access } from "node:fs/promises";
 import { join } from "node:path";
 
-import { runCli, withTempDirectory, writeText } from "./helpers";
+import { runCli, withTempDirectory, writeText } from "../helpers";
 
 describe("CLI", () => {
 	test("build --stdout has no file side effect", async () => {
