@@ -177,6 +177,16 @@ bun run build
 
 The project uses [`@yuu1111/biome-config`](https://www.npmjs.com/package/@yuu1111/biome-config) and [`@yuu1111/tsconfig`](https://www.npmjs.com/package/@yuu1111/tsconfig).
 
+## Publishing
+
+Releases are published to npm by [the release workflow](./.github/workflows/release.yml) when a GitHub Release is published. Before the first release, configure an npm Trusted Publisher for:
+
+- repository: `yuu1111/agents-compose`
+- workflow: `release.yml`
+- environment: `npm`
+
+The workflow runs the full check and build, verifies the package with `npm pack --dry-run`, and publishes with npm provenance.
+
 ## License
 
 [MIT](./LICENSE)
