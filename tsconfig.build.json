@@ -1,10 +1,6 @@
 {
-	"extends": "./tsconfig.json",
+	"extends": ["./tsconfig.json", "@yuu1111/tsconfig/library.json"],
 	"compilerOptions": {
-		"noEmit": false,
-		"declaration": true,
-		"declarationMap": true,
-		"sourceMap": true,
 		"outDir": "dist",
 		"rootDir": "src"
 	},
