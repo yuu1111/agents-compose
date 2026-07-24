@@ -1,0 +1,7 @@
+{
+	"$schema": "../../schema.json",
+	"version": 1,
+	"output": "AGENTS.md",
+	"sources": ["docs/project.md", "docs/*.md"],
+	"exclude": ["docs/private.md"]
+}

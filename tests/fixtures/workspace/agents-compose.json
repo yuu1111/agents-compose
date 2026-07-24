@@ -1,0 +1,10 @@
+{
+	"$schema": "../../../schema.json",
+	"version": 1,
+	"output": "AGENTS.md",
+	"sources": ["docs/agent/workspace.md", "docs/agent/*.md"],
+	"exclude": ["docs/agent/private.md"],
+	"stripFrontmatter": true,
+	"sourceComments": true,
+	"generatedHeader": true
+}

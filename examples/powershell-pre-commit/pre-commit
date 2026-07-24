@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+project_root="$(git rev-parse --show-toplevel)"
+
+pwsh -NoProfile -NonInteractive -Command \
+  "Set-Location -LiteralPath '$project_root'; npx agents-compose build"
+git add -- "$project_root/AGENTS.md"

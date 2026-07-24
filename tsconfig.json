@@ -1,0 +1,9 @@
+{
+	"extends": "@yuu1111/tsconfig/base.json",
+	"compilerOptions": {
+		"paths": {
+			"@/*": ["./src/*"]
+		}
+	},
+	"include": ["src/**/*.ts", "tests/**/*.ts"]
+}

@@ -1,0 +1,61 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "agents-compose configuration",
+	"description": "Configuration for composing Markdown sources into AGENTS.md.",
+	"type": "object",
+	"additionalProperties": false,
+	"required": ["version", "sources"],
+	"properties": {
+		"$schema": {
+			"type": "string",
+			"description": "Optional JSON Schema reference used by editors."
+		},
+		"version": {
+			"const": 1,
+			"description": "Configuration format version."
+		},
+		"output": {
+			"$ref": "#/$defs/path",
+			"description": "Output path relative to the configuration file.",
+			"default": "AGENTS.md"
+		},
+		"sources": {
+			"type": "array",
+			"description": "Source paths or glob patterns, expanded in declaration order.",
+			"minItems": 1,
+			"items": {
+				"$ref": "#/$defs/path"
+			}
+		},
+		"exclude": {
+			"type": "array",
+			"description": "Glob patterns removed after source expansion.",
+			"items": {
+				"$ref": "#/$defs/path"
+			},
+			"default": []
+		},
+		"stripFrontmatter": {
+			"type": "boolean",
+			"description": "Remove a leading frontmatter block from each source.",
+			"default": true
+		},
+		"sourceComments": {
+			"type": "boolean",
+			"description": "Add a source path comment before each source.",
+			"default": true
+		},
+		"generatedHeader": {
+			"type": "boolean",
+			"description": "Add the agents-compose generated-file header.",
+			"default": true
+		}
+	},
+	"$defs": {
+		"path": {
+			"type": "string",
+			"minLength": 1,
+			"pattern": "^(?!\\s*$)(?!\\!)[^\\r\\n]+$"
+		}
+	}
+}

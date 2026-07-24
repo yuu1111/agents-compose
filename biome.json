@@ -1,0 +1,19 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+	"extends": ["@yuu1111/biome-config/biome"],
+	"formatter": {
+		"lineWidth": 100
+	},
+	"overrides": [
+		{
+			"includes": ["src/index.ts"],
+			"linter": {
+				"rules": {
+					"performance": {
+						"noBarrelFile": "off"
+					}
+				}
+			}
+		}
+	]
+}
