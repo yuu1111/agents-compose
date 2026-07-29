@@ -30,6 +30,21 @@
 - 出力の書き込み・比較: `tests/io/`
 - Git submodule 同期: `tests/cli/sync.test.ts`
 
+## CLI契約
+
+- `build` と `check` は現在のローカルソースだけを扱い、Git の起動やnetworkアクセスを行わないこと。
+- `sync` だけが宣言済みsubmoduleを更新し、更新後に通常の合成・出力処理を使うこと。
+- 終了コードは、成功を `0`、`check` で出力が存在しないか古い場合を `1`、設定・入力・I/O・Gitのエラーを `2` とすること。
+- 診断は標準エラー出力へ書き、生成Markdownや `check --diff` のdiffだけを標準出力へ書くこと。
+
+## Git submodule同期の安全条件
+
+- submoduleのURLと追従branchは `.gitmodules` を正本とし、`agents-compose.json` には更新対象パスだけを持たせること。
+- 更新開始前に、全対象が登録済みsubmoduleであることと、初期化済みsubmoduleがdirtyでないことを検証すること。1件でも失敗した場合は更新を始めないこと。
+- 未初期化submoduleは `--init` で取得できるようにし、source探索はsubmodule更新後に行うこと。
+- Gitはshell文字列ではなく引数配列で起動し、失敗時はGitの標準エラー出力を診断から失わないこと。
+- `sync` はstage、commit、pushを行わないこと。
+
 ## 互換性
 
 - 設定や生成出力の変更は、公開 API の変更として扱うこと。
