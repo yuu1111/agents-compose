@@ -81,31 +81,6 @@ async function findRepositoryRoot(projectRoot: string): Promise<string> {
 	return resolve(lines.slice(1).join("\n"));
 }
 
-async function registeredSubmodulePaths(
-	repositoryRoot: string,
-): Promise<Set<string>> {
-	const result = await runGit(
-		repositoryRoot,
-		[
-			"config",
-			"--file",
-			resolve(repositoryRoot, ".gitmodules"),
-			"--get-regexp",
-			"^submodule\\..*\\.path$",
-		],
-		"reading .gitmodules",
-		[0, 1],
-	);
-	const paths = new Set<string>();
-	for (const line of result.stdout.split(/\r?\n/u)) {
-		const separator = line.search(/\s/u);
-		if (separator >= 0) {
-			paths.add(portablePath(line.slice(separator).trim()));
-		}
-	}
-	return paths;
-}
-
 async function assertCleanIfInitialized(
 	repositoryRoot: string,
 	target: SubmoduleTarget,
@@ -114,14 +89,18 @@ async function assertCleanIfInitialized(
 		repositoryRoot,
 		["submodule", "status", "--", target.repositoryPath],
 		`checking submodule ${target.configuredPath}`,
+		[0, 1],
 	);
+	if (status.exitCode !== 0 || status.stdout.trim().length === 0) {
+		throw new AgentsComposeError(
+			appendGitStderr(
+				`Path is not a submodule registered in .gitmodules: ${target.configuredPath}`,
+				status.stderr,
+			),
+		);
+	}
 	if (status.stdout.startsWith("-")) {
 		return;
-	}
-	if (status.stdout.trim().length === 0) {
-		throw new AgentsComposeError(
-			`Unable to determine submodule status: ${target.configuredPath}`,
-		);
 	}
 
 	const workingTree = await runGit(
@@ -138,7 +117,6 @@ async function assertCleanIfInitialized(
 
 export async function syncGitSubmodules(config: ResolvedConfig): Promise<void> {
 	const repositoryRoot = await findRepositoryRoot(config.projectRoot);
-	const registered = await registeredSubmodulePaths(repositoryRoot);
 	const targets = config.gitSubmodules.map((configuredPath) => {
 		const absolutePath = resolve(config.projectRoot, configuredPath);
 		return {
@@ -148,13 +126,6 @@ export async function syncGitSubmodules(config: ResolvedConfig): Promise<void> {
 		};
 	});
 
-	for (const target of targets) {
-		if (!registered.has(target.repositoryPath)) {
-			throw new AgentsComposeError(
-				`Path is not a submodule registered in .gitmodules: ${target.configuredPath}`,
-			);
-		}
-	}
 	for (const target of targets) {
 		await assertCleanIfInitialized(repositoryRoot, target);
 	}

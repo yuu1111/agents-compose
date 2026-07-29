@@ -5,14 +5,30 @@
 `agents-compose` は通常の Markdown ドキュメントを、決定的な `AGENTS.md` に合成する。
 コアは小さく決定的に保ち、特定の AI プロバイダーに依存させないこと。
 
-## 開発
+## 実装の責務境界
+
+- `src/config/` は設定の解析・検証と、設定ファイル位置を基準とするパス解決を担う。
+- `src/core/` はソース探索、Markdown 変換、レンダリング、それらの合成フローを担う。ファイル書き込みや CLI 表示を持ち込まないこと。
+- `src/io/` は UTF-8 読み込み、バイト比較、一時ファイルからの置換による出力を担う。
+- `src/cli/` は引数解析、終了コード、標準出力・標準エラー出力の契約を担う。Git submodule 操作は `src/git/` に閉じ込めること。
+- `src/index.ts` からの export はライブラリの公開 API として扱うこと。
+
+## 開発と検証
 
 - 依存関係の管理とテストには Bun を使用すること。
 - ランタイムは Node.js 22 以降をサポートすること。
 - 編集後は `bun run format` を実行すること。
+- 狭い検証には `bun test <test-file>`、テスト名で絞る場合は `bun test -t <pattern>` を使うこと。
 - コミット前に `bun run check` を実行すること。
 - ランタイム依存関係は、ローカルで実装する利点がない機能に限定すること。
-- レンダリング動作を変更した場合は、golden fixture を追加または更新すること。
+
+変更箇所ごとに次を同期すること。
+
+- ソース探索・変換・レンダリング: `tests/core/` と golden fixture
+- 設定キーや既定値: `schema.json`、`src/config/`、`tests/config/`、README の設定リファレンス
+- CLI の引数・表示・終了コード: `tests/cli/`
+- 出力の書き込み・比較: `tests/io/`
+- Git submodule 同期: `tests/cli/sync.test.ts`
 
 ## 互換性
 
@@ -24,8 +40,8 @@
 ## ドキュメント
 
 - README の例は実行可能な状態に保つこと。
-- `schema.json`、ランタイム検証、テスト、設定リファレンスを同期させること。
-- このファイルは `bun run compose` で生成し、`AGENTS.md` を直接編集しないこと。
+- 利用者向けの README は英語版 `README.md` と日本語版 `README.ja.md` の内容を同期させること。
+- `AGENTS.md` は `docs/agent/project.md` から `bun run compose` で生成し、直接編集しないこと。
 
 ## リリース
 
