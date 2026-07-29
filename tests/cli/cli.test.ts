@@ -5,6 +5,13 @@ import { join } from "node:path";
 import { runCli, withTempDirectory, writeText } from "../helpers";
 
 describe("CLI", () => {
+	test("help documents the sync command", async () => {
+		const result = await runCli(["--help"], process.cwd());
+
+		expect(result.exitCode).toBe(0);
+		expect(result.stdout).toContain("agents-compose sync [--config <path>]");
+	});
+
 	test("build --stdout has no file side effect", async () => {
 		await withTempDirectory(async (directory) => {
 			await writeText(

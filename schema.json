@@ -35,6 +35,15 @@
 			},
 			"default": []
 		},
+		"gitSubmodules": {
+			"type": "array",
+			"description": "Git submodule paths updated by the explicit sync command.",
+			"items": {
+				"$ref": "#/$defs/literalPath"
+			},
+			"uniqueItems": true,
+			"default": []
+		},
 		"stripFrontmatter": {
 			"type": "boolean",
 			"description": "Remove a leading frontmatter block from each source.",
@@ -56,6 +65,16 @@
 			"type": "string",
 			"minLength": 1,
 			"pattern": "^(?!\\s*$)(?!\\!)[^\\r\\n]+$"
+		},
+		"literalPath": {
+			"allOf": [
+				{
+					"$ref": "#/$defs/path"
+				},
+				{
+					"pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$))[^*?{}[\\]]+$"
+				}
+			]
 		}
 	}
 }

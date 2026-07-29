@@ -34,6 +34,12 @@ describe("parseArguments", () => {
 			stdout: false,
 			diff: true,
 		});
+		expect(parseArguments(["sync"], currentDirectory)).toEqual({
+			command: "sync",
+			configPath: resolve(currentDirectory, "agents-compose.json"),
+			stdout: false,
+			diff: false,
+		});
 	});
 
 	test.each([
@@ -42,6 +48,8 @@ describe("parseArguments", () => {
 		[["build", "--config"], "--config requires a path"],
 		[["build", "--diff"], "--diff can only be used with check"],
 		[["check", "--stdout"], "--stdout can only be used with build"],
+		[["sync", "--stdout"], "sync only accepts --config"],
+		[["sync", "--diff"], "sync only accepts --config"],
 	])("rejects invalid arguments %#", (args, message) => {
 		expect(() => parseArguments(args, currentDirectory)).toThrow(message);
 	});

@@ -60,6 +60,7 @@ CLI をインストールしていないエージェント、レビュアー、W
 ```console
 agents-compose build [--config <path>] [--stdout]
 agents-compose check [--config <path>] [--diff]
+agents-compose sync [--config <path>]
 ```
 
 | コマンド | 動作 |
@@ -68,6 +69,7 @@ agents-compose check [--config <path>] [--diff]
 | `build --stdout` | 生成した Markdown のみを標準出力へ書き込み、出力ファイルには触れません。 |
 | `check` | 出力が最新なら終了コード 0、存在しないか古い場合は 1 を返します。 |
 | `check --diff` | 出力が存在しないか古い場合に unified diff を表示します。 |
+| `sync` | 宣言済み Git submodule を更新してから、設定された出力を生成します。 |
 | `--config <path>` | `agents-compose.json` 以外の設定ファイルを使用します。相対パスはカレントディレクトリを基準に解決します。 |
 
 設定、入力、I/O のエラーは終了コード 2 を返します。診断メッセージは標準エラー出力に書き込みます。
@@ -82,6 +84,7 @@ agents-compose check [--config <path>] [--diff]
 | `sources` | `string[]` | 必須 | リテラルパスまたは glob パターンです。宣言順に展開します。 |
 | `output` | `string` | `"AGENTS.md"` | 生成ファイルのパスです。glob は使用できません。 |
 | `exclude` | `string[]` | `[]` | ソース展開後に除外するパターンです。 |
+| `gitSubmodules` | `string[]` | `[]` | `sync` で更新する Git submodule のリテラルパスです。glob、重複、絶対パス、`..` は使用できません。 |
 | `stripFrontmatter` | `boolean` | `true` | 各ソースの先頭にある完全な `---` frontmatter ブロックを除去します。 |
 | `sourceComments` | `boolean` | `true` | 各ソースの前に `<!-- source: path -->` を追加します。 |
 | `generatedHeader` | `boolean` | `true` | 生成ファイルであることを示す警告ヘッダーを追加します。 |
@@ -99,6 +102,42 @@ agents-compose check [--config <path>] [--diff]
 - 出力ファイル自体は常にソース集合から除外されます。
 - シンボリックリンクはたどりません。リテラル指定したソースがシンボリックリンクの場合はエラーになります。
 - 除外後にソースが 1 つも残らない場合はエラーになります。
+
+### Git submodule で共有するルール
+
+エージェント専用ルールは `.agents/rules/` に配置します。共有ルールsubmoduleの推奨配置先は `.agents/rules/<name>/` です。人間向けの既存文書は `docs/` など、従来の信頼できる情報源に置いたまま合成できます。`.agents/rules/` への移動は必須ではありません。
+
+submodule の URL とbranchは `.gitmodules` を正本とし、追従branchを明示します。
+
+```ini
+[submodule ".agents/rules/ffxiv-terminology"]
+  path = .agents/rules/ffxiv-terminology
+  url = https://github.com/example/ffxiv-terminology.git
+  branch = main
+```
+
+`agents-compose.json` でパスを宣言し、その中の Markdown を合成対象にします。
+
+```json
+{
+  "version": 1,
+  "sources": [
+    "docs/agent/project.md",
+    ".agents/rules/ffxiv-terminology/*.md"
+  ],
+  "gitSubmodules": [
+    ".agents/rules/ffxiv-terminology"
+  ]
+}
+```
+
+同期は明示的に実行します。
+
+```console
+npx agents-compose sync
+```
+
+`sync` は、更新を始める前に宣言された全パスと、初期化済みsubmoduleのdirty状態を検証します。その後、`git submodule update --init --remote -- <paths...>` 相当の更新を行い、`AGENTS.md` を生成します。stage、commit、push は行いません。`build` と `check` は引き続き決定的かつオフラインで、Git の起動やnetworkアクセスを行いません。
 
 ### 入出力
 
@@ -120,6 +159,13 @@ agents-compose check [--config <path>] [--diff]
 ```
 
 このリポジトリには、Windows、Linux、macOS 上の Node.js 22 と 24 でテストする完全な [GitHub Actions workflow](./.github/workflows/ci.yml) が含まれています。
+
+定期実行でsubmoduleの追従漏れを検出するには、`sync` の後に Git で変更を確認します。
+
+```yaml
+- run: npx agents-compose sync
+- run: git diff --exit-code
+```
 
 ## pre-commit フック
 
@@ -164,7 +210,7 @@ process.stdout.write(result.content);
 - JavaScript、MDX、リモートテンプレートの実行
 - AI によるルールの生成や書き換え
 - 意味上の矛盾の検出
-- リモートソースの取得
+- `build` または `check` 中のリモートソース取得。宣言済み Git submodule は、明示的な `sync` でのみ更新します
 
 複数ツール向けにルールを変換する場合は、[Rulesync](https://github.com/dyoshikawa/rulesync) などのプロジェクトを使用してください。`agents-compose` は docs-as-source と決定的な `AGENTS.md` 生成に特化しています。
 

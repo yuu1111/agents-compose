@@ -4,7 +4,7 @@ import { DEFAULT_CONFIG_NAME } from "@/config";
 import { AgentsComposeError } from "@/shared/errors";
 
 export interface ParsedArguments {
-	command: "build" | "check";
+	command: "build" | "check" | "sync";
 	configPath: string;
 	stdout: boolean;
 	diff: boolean;
@@ -24,7 +24,7 @@ export function parseArguments(
 	}
 
 	const command = args[0];
-	if (command !== "build" && command !== "check") {
+	if (command !== "build" && command !== "check" && command !== "sync") {
 		throw new AgentsComposeError(`Unknown command: ${command ?? ""}`);
 	}
 
@@ -60,6 +60,9 @@ export function parseArguments(
 	}
 	if (command === "check" && stdout) {
 		throw new AgentsComposeError("--stdout can only be used with build.");
+	}
+	if (command === "sync" && (stdout || diff)) {
+		throw new AgentsComposeError("sync only accepts --config.");
 	}
 
 	return { command, configPath, stdout, diff };

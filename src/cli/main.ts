@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { type ParsedArguments, parseArguments } from "@/cli/arguments";
 import { loadConfig, type ResolvedConfig } from "@/config";
 import { type ComposeResult, compose } from "@/core/compose";
+import { syncGitSubmodules } from "@/git/submodules";
 import { checkOutput } from "@/io/check";
 import { writeOutput } from "@/io/output";
 import { AgentsComposeError, toErrorMessage } from "@/shared/errors";
@@ -21,6 +22,7 @@ Compose ordinary Markdown documents into a deterministic AGENTS.md.
 Usage:
   agents-compose build [--config <path>] [--stdout]
   agents-compose check [--config <path>] [--diff]
+  agents-compose sync [--config <path>]
   agents-compose --help
   agents-compose --version
 `;
@@ -71,9 +73,12 @@ async function run(args: string[]): Promise<number> {
 	}
 
 	const config = await loadConfig(parsed.configPath);
+	if (parsed.command === "sync") {
+		await syncGitSubmodules(config);
+	}
 	const result = await compose(config);
 
-	if (parsed.command === "build") {
+	if (parsed.command === "build" || parsed.command === "sync") {
 		return await runBuild(parsed, config, result);
 	}
 	return await runCheck(parsed, config, result);

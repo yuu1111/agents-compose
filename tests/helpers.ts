@@ -35,11 +35,13 @@ export interface CommandResult {
 export async function runCli(
 	args: string[],
 	cwd: string,
+	env?: NodeJS.ProcessEnv,
 ): Promise<CommandResult> {
 	const cliPath = join(projectRoot, "src", "cli.ts");
 	return await new Promise((resolveResult, reject) => {
 		const child = spawn(process.execPath, [cliPath, ...args], {
 			cwd,
+			env: env === undefined ? undefined : { ...process.env, ...env },
 			stdio: ["ignore", "pipe", "pipe"],
 		});
 		let stdout = "";

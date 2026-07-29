@@ -60,6 +60,7 @@ Commit `AGENTS.md` so agents, reviewers, and web interfaces can read it without 
 ```console
 agents-compose build [--config <path>] [--stdout]
 agents-compose check [--config <path>] [--diff]
+agents-compose sync [--config <path>]
 ```
 
 | Command | Behavior |
@@ -68,6 +69,7 @@ agents-compose check [--config <path>] [--diff]
 | `build --stdout` | Writes only the generated Markdown to standard output and does not touch the output file. |
 | `check` | Returns exit code 0 when the output is current and 1 when it is missing or stale. |
 | `check --diff` | Prints a unified diff for a missing or stale output. |
+| `sync` | Updates declared Git submodules, then generates the configured output. |
 | `--config <path>` | Uses a configuration file other than `agents-compose.json`. Relative paths are resolved from the current directory. |
 
 Configuration, input, and I/O errors return exit code 2. Diagnostics are written to standard error.
@@ -82,6 +84,7 @@ All paths are relative to the directory containing the configuration file. Paths
 | `sources` | `string[]` | required | Literal paths or glob patterns, expanded in declaration order. |
 | `output` | `string` | `"AGENTS.md"` | Generated file path. Globs are not allowed. |
 | `exclude` | `string[]` | `[]` | Patterns removed after source expansion. |
+| `gitSubmodules` | `string[]` | `[]` | Literal Git submodule paths updated by `sync`. Globs, duplicates, absolute paths, and `..` are not allowed. |
 | `stripFrontmatter` | `boolean` | `true` | Removes a complete leading `---` frontmatter block from each source. |
 | `sourceComments` | `boolean` | `true` | Adds `<!-- source: path -->` before each source. |
 | `generatedHeader` | `boolean` | `true` | Adds the generated-file warning header. |
@@ -99,6 +102,42 @@ Unknown keys and unsupported versions are errors. The bundled [JSON Schema](./sc
 - The output itself is always removed from the source set.
 - Symbolic links are not followed. A literal symbolic-link source is an error.
 - Having no sources after exclusions is an error.
+
+### Shared rules in Git submodules
+
+Keep agent-only rules under `.agents/rules/`. The recommended location for a shared-rules submodule is `.agents/rules/<name>/`. Existing human-facing documentation may remain in its original source-of-truth location, such as `docs/`; it does not need to move under `.agents/rules/`.
+
+Declare the tracking branch in `.gitmodules`, which remains the source of truth for submodule URLs and branches:
+
+```ini
+[submodule ".agents/rules/ffxiv-terminology"]
+  path = .agents/rules/ffxiv-terminology
+  url = https://github.com/example/ffxiv-terminology.git
+  branch = main
+```
+
+Include the path in `agents-compose.json` and compose Markdown from it:
+
+```json
+{
+  "version": 1,
+  "sources": [
+    "docs/agent/project.md",
+    ".agents/rules/ffxiv-terminology/*.md"
+  ],
+  "gitSubmodules": [
+    ".agents/rules/ffxiv-terminology"
+  ]
+}
+```
+
+Run synchronization explicitly:
+
+```console
+npx agents-compose sync
+```
+
+`sync` validates every declared path and dirty initialized submodule before updating any target. It then performs the equivalent of `git submodule update --init --remote -- <paths...>` and generates `AGENTS.md`. It never stages, commits, or pushes changes. `build` and `check` remain deterministic and offline: they do not invoke Git or access the network.
 
 ### Input and output
 
@@ -120,6 +159,13 @@ Commit the generated file and run `check` in CI:
 ```
 
 The repository includes a complete [GitHub Actions workflow](./.github/workflows/ci.yml) that tests Node.js 22 and 24 on Windows, Linux, and macOS.
+
+For a scheduled submodule freshness check, run `sync` and then let Git detect changes:
+
+```yaml
+- run: npx agents-compose sync
+- run: git diff --exit-code
+```
 
 ## Pre-commit hook
 
@@ -164,7 +210,7 @@ process.stdout.write(result.content);
 - execute JavaScript, MDX, or remote templates
 - use AI to generate or rewrite rules
 - detect semantic contradictions
-- fetch remote sources
+- fetch remote sources during `build` or `check`; declared Git submodules are updated only by explicit `sync`
 
 For multi-tool rule conversion, use a project such as [Rulesync](https://github.com/dyoshikawa/rulesync). `agents-compose` focuses on docs-as-source and deterministic `AGENTS.md` generation.
 

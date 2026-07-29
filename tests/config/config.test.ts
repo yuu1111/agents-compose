@@ -12,6 +12,7 @@ describe("parseConfig", () => {
 			output: "AGENTS.md",
 			sources: ["docs/*.md"],
 			exclude: [],
+			gitSubmodules: [],
 			stripFrontmatter: true,
 			sourceComments: true,
 			generatedHeader: true,
@@ -41,6 +42,29 @@ describe("parseConfig", () => {
 		],
 	])("rejects invalid configuration %#", (raw, message) => {
 		expect(() => parseConfig(raw)).toThrow(message);
+	});
+
+	test("accepts literal unique Git submodule paths", () => {
+		expect(
+			parseConfig({
+				version: 1,
+				sources: [".agents/rules/shared/rules.md"],
+				gitSubmodules: [".agents/rules/shared"],
+			}).gitSubmodules,
+		).toEqual([".agents/rules/shared"]);
+	});
+
+	test.each([
+		[[""], "non-empty"],
+		[["/rules"], "project root"],
+		[["../rules"], "project root"],
+		[["rules/*"], "glob pattern"],
+		[["rules", "rules"], "Duplicate"],
+		[["rules", "./rules/"], "Duplicate"],
+	])("rejects invalid Git submodule paths %#", (gitSubmodules, message) => {
+		expect(() =>
+			parseConfig({ version: 1, sources: ["docs/*.md"], gitSubmodules }),
+		).toThrow(message);
 	});
 });
 

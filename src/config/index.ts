@@ -1,4 +1,11 @@
-import { dirname, isAbsolute, relative, resolve, win32 } from "node:path";
+import {
+	dirname,
+	isAbsolute,
+	posix,
+	relative,
+	resolve,
+	win32,
+} from "node:path";
 
 import { isDynamicPattern } from "tinyglobby";
 
@@ -13,6 +20,7 @@ const CONFIG_KEYS = [
 	"output",
 	"sources",
 	"exclude",
+	"gitSubmodules",
 	"stripFrontmatter",
 	"sourceComments",
 	"generatedHeader",
@@ -27,6 +35,7 @@ export interface ComposeOptions {
 	output: string;
 	sources: string[];
 	exclude: string[];
+	gitSubmodules: string[];
 	stripFrontmatter: boolean;
 	sourceComments: boolean;
 	generatedHeader: boolean;
@@ -115,6 +124,41 @@ function readBoolean(
 	return value;
 }
 
+function readGitSubmodules(raw: Record<string, unknown>): string[] {
+	const value = raw.gitSubmodules;
+	if (value === undefined) {
+		return [];
+	}
+	if (!Array.isArray(value)) {
+		throw new AgentsComposeError("gitSubmodules must be an array.");
+	}
+
+	const seen = new Set<string>();
+	return value.map((item, index) => {
+		if (typeof item !== "string") {
+			throw new AgentsComposeError(`gitSubmodules[${index}] must be a string.`);
+		}
+		const path = posix
+			.normalize(normalizeRelativePath(item, `gitSubmodules[${index}]`))
+			.replace(/\/+$/u, "");
+		if (path === "" || path === ".") {
+			throw new AgentsComposeError(
+				`gitSubmodules[${index}] must identify a submodule path.`,
+			);
+		}
+		if (isDynamicPattern(path, { caseSensitiveMatch: true })) {
+			throw new AgentsComposeError(
+				`gitSubmodules[${index}] must not contain a glob pattern.`,
+			);
+		}
+		if (seen.has(path)) {
+			throw new AgentsComposeError(`Duplicate gitSubmodules path: ${path}`);
+		}
+		seen.add(path);
+		return path;
+	});
+}
+
 function assertKnownKeys(raw: Record<string, unknown>): void {
 	for (const key of Object.keys(raw)) {
 		if (!knownKeys.has(key)) {
@@ -155,6 +199,7 @@ export function parseConfig(rawValue: unknown): ComposeOptions {
 		output: readOutput(rawValue),
 		sources: readStringArray(rawValue, "sources", true),
 		exclude: readStringArray(rawValue, "exclude", false),
+		gitSubmodules: readGitSubmodules(rawValue),
 		stripFrontmatter: readBoolean(rawValue, "stripFrontmatter", true),
 		sourceComments: readBoolean(rawValue, "sourceComments", true),
 		generatedHeader: readBoolean(rawValue, "generatedHeader", true),
