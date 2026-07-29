@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { relative, resolve } from "node:path";
+import { posix, resolve } from "node:path";
 
 import type { ResolvedConfig } from "@/config";
 import { AgentsComposeError } from "@/shared/errors";
@@ -14,6 +14,11 @@ interface SubmoduleTarget {
 	configuredPath: string;
 	repositoryPath: string;
 	absolutePath: string;
+}
+
+interface RepositoryLocation {
+	root: string;
+	projectPrefix: string;
 }
 
 function portablePath(path: string): string {
@@ -66,7 +71,9 @@ async function runGit(
 	return result;
 }
 
-async function findRepositoryRoot(projectRoot: string): Promise<string> {
+async function findRepositoryLocation(
+	projectRoot: string,
+): Promise<RepositoryLocation> {
 	const result = await runGit(
 		projectRoot,
 		["rev-parse", "--is-inside-work-tree", "--show-toplevel"],
@@ -78,7 +85,15 @@ async function findRepositoryRoot(projectRoot: string): Promise<string> {
 			`Project root is not inside a Git worktree: ${projectRoot}`,
 		);
 	}
-	return resolve(lines.slice(1).join("\n"));
+	const prefix = await runGit(
+		projectRoot,
+		["rev-parse", "--show-prefix"],
+		"locating the project root within the worktree",
+	);
+	return {
+		root: resolve(lines.slice(1).join("\n")),
+		projectPrefix: portablePath(prefix.stdout.trim()),
+	};
 }
 
 async function assertCleanIfInitialized(
@@ -116,23 +131,23 @@ async function assertCleanIfInitialized(
 }
 
 export async function syncGitSubmodules(config: ResolvedConfig): Promise<void> {
-	const repositoryRoot = await findRepositoryRoot(config.projectRoot);
+	const repository = await findRepositoryLocation(config.projectRoot);
 	const targets = config.gitSubmodules.map((configuredPath) => {
 		const absolutePath = resolve(config.projectRoot, configuredPath);
 		return {
 			configuredPath,
 			absolutePath,
-			repositoryPath: portablePath(relative(repositoryRoot, absolutePath)),
+			repositoryPath: posix.join(repository.projectPrefix, configuredPath),
 		};
 	});
 
 	for (const target of targets) {
-		await assertCleanIfInitialized(repositoryRoot, target);
+		await assertCleanIfInitialized(repository.root, target);
 	}
 
 	if (targets.length > 0) {
 		await runGit(
-			repositoryRoot,
+			repository.root,
 			[
 				"submodule",
 				"update",
