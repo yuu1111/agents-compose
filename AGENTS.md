@@ -63,6 +63,7 @@
 
 ## リリース
 
+- リリース依頼では、指定バージョンへの更新、lockfileの同期、検証、commit、pushも一連の作業として行うこと。
 - GitHub Release を起点に、release workflow を通して公開すること。
 - npm provenance を使用すること。
 - CI またはパッケージの dry-run 検証が失敗した場合は公開しないこと。
