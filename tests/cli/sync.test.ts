@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 
 import {
 	type CommandResult,
@@ -139,22 +139,63 @@ describe("sync CLI", () => {
 		});
 	}, 60_000);
 
-	test("rejects a dirty initialized submodule before updating", async () => {
-		await withTempDirectory(async (directory) => {
-			const fixture = await createRepositoryFixture(directory);
-			await writeText(
-				join(fixture.consumer, fixture.submodulePath, "rules.md"),
-				"# Dirty\n",
-			);
+	test.each([
+		["the normal environment", undefined],
+		["a relative parent GIT_INDEX_FILE", ".git/index"],
+		["an absolute parent GIT_INDEX_FILE", "absolute"],
+	])(
+		"accepts a clean initialized submodule with %s",
+		async (_name, index) => {
+			await withTempDirectory(async (directory) => {
+				const fixture = await createRepositoryFixture(directory);
+				const gitIndexFile =
+					index === "absolute"
+						? join(fixture.consumer, ".git", "index")
+						: index;
+				const env = {
+					...fileProtocol,
+					...(gitIndexFile === undefined
+						? {}
+						: { GIT_INDEX_FILE: gitIndexFile }),
+				};
 
-			const result = await runCli(["sync"], fixture.consumer, fileProtocol);
+				const result = await runCli(["sync"], fixture.consumer, env);
 
-			expect(result.exitCode).toBe(2);
-			expect(result.stderr).toContain(
-				`Submodule has uncommitted changes: ${fixture.submodulePath}`,
-			);
-		});
-	}, 60_000);
+				expect(result.exitCode).toBe(0);
+				expect(result.stderr).toContain("Generated AGENTS.md");
+				if (gitIndexFile !== undefined) {
+					expect(isAbsolute(gitIndexFile)).toBe(index === "absolute");
+				}
+			});
+		},
+		60_000,
+	);
+
+	test.each(["staged", "unstaged", "untracked"])(
+		"rejects a submodule with %s changes before updating",
+		async (changeType) => {
+			await withTempDirectory(async (directory) => {
+				const fixture = await createRepositoryFixture(directory);
+				const submodule = join(fixture.consumer, fixture.submodulePath);
+				if (changeType === "untracked") {
+					await writeText(join(submodule, "untracked.md"), "# Untracked\n");
+				} else {
+					await writeText(join(submodule, "rules.md"), "# Dirty\n");
+					if (changeType === "staged") {
+						await git(submodule, ["add", "rules.md"]);
+					}
+				}
+
+				const result = await runCli(["sync"], fixture.consumer, fileProtocol);
+
+				expect(result.exitCode).toBe(2);
+				expect(result.stderr).toContain(
+					`Submodule has uncommitted changes: ${fixture.submodulePath}`,
+				);
+			});
+		},
+		60_000,
+	);
 
 	test("rejects a path that is not registered in .gitmodules", async () => {
 		await withTempDirectory(async (directory) => {

@@ -35,9 +35,11 @@ async function runGit(
 	args: string[],
 	context: string,
 	allowedExitCodes: readonly number[] = [0],
+	env?: NodeJS.ProcessEnv,
 ): Promise<GitResult> {
 	const result = await new Promise<GitResult>((resolveResult, reject) => {
 		const child = spawn("git", ["-C", cwd, ...args], {
+			env,
 			stdio: ["ignore", "pipe", "pipe"],
 		});
 		let stdout = "";
@@ -71,6 +73,27 @@ async function runGit(
 	return result;
 }
 
+async function environmentWithoutRepositoryLocalGitVariables(
+	repositoryRoot: string,
+): Promise<NodeJS.ProcessEnv> {
+	const result = await runGit(
+		repositoryRoot,
+		["rev-parse", "--local-env-vars"],
+		"identifying repository-local Git environment variables",
+	);
+	const localVariableNames = new Set(
+		result.stdout
+			.split(/\r?\n/u)
+			.filter((name) => name.length > 0)
+			.map((name) => name.toUpperCase()),
+	);
+	return Object.fromEntries(
+		Object.entries(process.env).filter(
+			([name]) => !localVariableNames.has(name.toUpperCase()),
+		),
+	);
+}
+
 async function findRepositoryLocation(
 	projectRoot: string,
 ): Promise<RepositoryLocation> {
@@ -99,6 +122,7 @@ async function findRepositoryLocation(
 async function assertCleanIfInitialized(
 	repositoryRoot: string,
 	target: SubmoduleTarget,
+	submoduleEnvironment: NodeJS.ProcessEnv,
 ): Promise<void> {
 	const status = await runGit(
 		repositoryRoot,
@@ -122,6 +146,8 @@ async function assertCleanIfInitialized(
 		target.absolutePath,
 		["status", "--porcelain=v1", "--untracked-files=normal"],
 		`checking whether submodule ${target.configuredPath} is dirty`,
+		[0],
+		submoduleEnvironment,
 	);
 	if (workingTree.stdout.length > 0) {
 		throw new AgentsComposeError(
@@ -132,6 +158,8 @@ async function assertCleanIfInitialized(
 
 export async function syncGitSubmodules(config: ResolvedConfig): Promise<void> {
 	const repository = await findRepositoryLocation(config.projectRoot);
+	const submoduleEnvironment =
+		await environmentWithoutRepositoryLocalGitVariables(repository.root);
 	const targets = config.gitSubmodules.map((configuredPath) => {
 		const absolutePath = resolve(config.projectRoot, configuredPath);
 		return {
@@ -142,7 +170,11 @@ export async function syncGitSubmodules(config: ResolvedConfig): Promise<void> {
 	});
 
 	for (const target of targets) {
-		await assertCleanIfInitialized(repository.root, target);
+		await assertCleanIfInitialized(
+			repository.root,
+			target,
+			submoduleEnvironment,
+		);
 	}
 
 	if (targets.length > 0) {
